@@ -20,9 +20,3 @@ Clone this repo and cd into it as normal user, then:
 
 $ qmake
 $ make
-
-KNOWN ISSUES
-
-Completion fails with the following one liner:
-struct x { void y() { } }; static void a() x x1; x1. }
-If you put your cursor after the "x1." and press ctrl+space, nothing happens (it should show auto-completion for y). The workaround is to move the very last closing curly brace onto the line below. I have no idea why this happens, if anyone does please let me know.

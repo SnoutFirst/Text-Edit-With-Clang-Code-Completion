@@ -14,7 +14,7 @@ TextEditWithClangCodeCompletion::TextEditWithClangCodeCompletion(QWidget *parent
     : QTextEdit(parent)
     , m_CompleterPopup(new QCompleter(this))
 {
-    setText(tr("//Start typing some C/C++, Ctrl+Space activates code completion\n\n//Demo:\ntypedef int CodeCompleteMe0\ntypedef int CodeCompleteMe1;\nCodeCo\n//          ^Click here and press Ctrl+Space"));
+    setText(tr("//Start typing some C/C++, Ctrl+Space activates code completion\n\n//Demo:\ntypedef int CodeCompleteMe0;\ntypedef int CodeCompleteMe1;\nCodeCo\n//          ^Click here and press Ctrl+Space"));
     m_CompleterPopup->setCaseSensitivity(Qt::CaseInsensitive);
     m_CompleterPopup->setWidget(this);
     m_CompleterPopup->setCompletionMode(QCompleter::PopupCompletion);
