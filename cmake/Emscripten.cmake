@@ -52,6 +52,11 @@ if(EMSCRIPTEN)
   set(TextEditWithClangCodeCompletion_ENABLE_HARDENING OFF CACHE BOOL "Hardening not supported with Emscripten" FORCE)
   add_compile_options(-fno-stack-protector)
 
+  # The prebuilt libclang/LLVM WASM archive uses WebAssembly exceptions and
+  # setjmp/longjmp; make sure our objects and the final link match that model.
+  add_compile_options(-fwasm-exceptions)
+  add_link_options(-fwasm-exceptions)
+
   # The template originally forced pthreads for FTXUI. This project uses Qt6 WASM
   # singlethread by default, so we only enable pthreads when requested.
   if(TextEditWithClangCodeCompletion_WASM_ENABLE_PTHREADS)
