@@ -35,7 +35,46 @@ function(TextEditWithClangCodeCompletion_setup_dependencies)
       find_package(Clang REQUIRED CONFIG)
 
       set(TEXTEDIT_CLANG_INCLUDE_DIRS "${_EM_LIBCLANG_ROOT}/include" PARENT_SCOPE)
-      set(TEXTEDIT_CLANG_LINK_LIBRARIES libclang PARENT_SCOPE)
+      # libclang's C API needs LLVM Support, which on this prebuilt WASM archive
+      # references the wasm longjmp runtime (__wasm_setjmp / emscripten_longjmp).
+      # That runtime is incompatible with the JS longjmp model used by Qt 6.7.3
+      # official binaries and the rest of our Emscripten 3.1.50 link.  The only
+      # object in libLLVMSupport.a that pulls those symbols in is
+      # CrashRecoveryContext.cpp.o.  Drop it from the link set; the editor's
+      # libclang usage only exercises parsing/code-completion and never needs
+      # LLVM's crash recovery machinery.
+      set(_EM_LLVM_SUPPORT_LIB "${_EM_LIBCLANG_ROOT}/lib/libLLVMSupport.a")
+      if(EXISTS "${_EM_LLVM_SUPPORT_LIB}")
+        set(_EM_FILTERED_SUPPORT_DIR "${CMAKE_BINARY_DIR}/emscripten-libclang-hack")
+        set(_EM_FILTERED_SUPPORT_LIB "${_EM_FILTERED_SUPPORT_DIR}/libLLVMSupport-no-crash-recovery.a")
+        file(MAKE_DIRECTORY "${_EM_FILTERED_SUPPORT_DIR}")
+        file(REMOVE "${_EM_FILTERED_SUPPORT_LIB}")
+        execute_process(
+          COMMAND ${CMAKE_AR} t "${_EM_LLVM_SUPPORT_LIB}"
+          OUTPUT_VARIABLE _EM_SUPPORT_MEMBERS
+          OUTPUT_STRIP_TRAILING_WHITESPACE
+          ERROR_QUIET)
+        if(_EM_SUPPORT_MEMBERS)
+          string(REPLACE "\n" ";" _EM_SUPPORT_MEMBERS_LIST "${_EM_SUPPORT_MEMBERS}")
+          list(REMOVE_ITEM _EM_SUPPORT_MEMBERS_LIST "CrashRecoveryContext.cpp.o")
+          foreach(_member ${_EM_SUPPORT_MEMBERS_LIST})
+            execute_process(
+              COMMAND ${CMAKE_AR} p "${_EM_LLVM_SUPPORT_LIB}" "${_member}"
+              OUTPUT_FILE "${_EM_FILTERED_SUPPORT_DIR}/${_member}"
+              ERROR_QUIET)
+          endforeach()
+          execute_process(
+            COMMAND ${CMAKE_AR} rcs "${_EM_FILTERED_SUPPORT_LIB}" ${_EM_SUPPORT_MEMBERS_LIST}
+            WORKING_DIRECTORY "${_EM_FILTERED_SUPPORT_DIR}"
+            ERROR_QUIET)
+          set(_EM_LLVM_SUPPORT_LIB "${_EM_FILTERED_SUPPORT_LIB}")
+        endif()
+      endif()
+
+      set(TEXTEDIT_CLANG_LINK_LIBRARIES
+        libclang
+        ${_EM_LLVM_SUPPORT_LIB}
+        PARENT_SCOPE)
       return()
     endif()
 

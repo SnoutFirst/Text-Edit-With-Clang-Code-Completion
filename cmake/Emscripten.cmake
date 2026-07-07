@@ -66,19 +66,10 @@ if(EMSCRIPTEN)
   # the JS exception runtime is linked in.
   add_link_options(-sNO_DISABLE_EXCEPTION_CATCHING)
 
-  # The prebuilt libclang-wasm archive references the wasm longjmp runtime
-  # (__wasm_setjmp / emscripten_longjmp), while Qt 6.7.3 is built against the
-  # JS/emscripten longjmp runtime. Statically linking both longjmp models at the
-  # same time does not work: the prebuilt archive's symbols expect
-  # __wasm_setjmp/emscripten_longjmp, but the final link provides JS longjmp.
-  # Work around this by asking the linker to treat those symbols as unresolved
-  # and provide tiny JS-callable stubs. This means code paths inside libclang
-  # that actually use setjmp/longjmp will fail at runtime, but the rest of the
-  # libclang API (parsing, completion, diagnostics) still works. If that
-  # proves insufficient, libclang must be rebuilt for the Qt/Emscripten 3.1.50
-  # ABI. See SUPPORT_LONGJMP notes in Emscripten docs for details.
-  add_link_options("-sERROR_ON_UNDEFINED_SYMBOLS=0")
-  add_link_options("-sWARN_ON_UNDEFINED_SYMBOLS=1")
+  # The libclang-wasm prebuilt only references the wasm longjmp runtime via
+  # libLLVMSupport.a's CrashRecoveryContext.cpp.o, which Dependencies.cmake now
+  # strips out. Keep the linker strict so real missing symbols still fail the
+  # build rather than producing a broken binary.
 
   # The template originally forced pthreads for FTXUI. This project uses Qt6 WASM
   # singlethread by default, so we only enable pthreads when requested.
