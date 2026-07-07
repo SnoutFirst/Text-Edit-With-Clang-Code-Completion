@@ -89,7 +89,6 @@ function(TextEditWithClangCodeCompletion_configure_wasm_target target)
     target_compile_definitions(${target} PRIVATE TextEditWithClangCodeCompletion_WASM_BUILD=1)
 
     set(_WASM_LINK_OPTIONS
-      "-sEMBIND=1"
       "-sASYNCIFY=1"
       "-sASYNCIFY_STACK_SIZE=${TextEditWithClangCodeCompletion_WASM_ASYNCIFY_STACK_SIZE}"
       "-sALLOW_MEMORY_GROWTH=1"
@@ -98,6 +97,10 @@ function(TextEditWithClangCodeCompletion_configure_wasm_target target)
       "-sEXPORTED_FUNCTIONS=['_main','_malloc','_free']"
       "-sASSERTIONS=1"
     )
+
+    # Link Emscripten's embind library explicitly. Modern Emscripten rejects
+    # the old -sEMBIND=1 flag as an internal setting.
+    target_link_libraries(${target} PRIVATE embind)
 
     if(TextEditWithClangCodeCompletion_WASM_ENABLE_PTHREADS)
       list(APPEND _WASM_LINK_OPTIONS
