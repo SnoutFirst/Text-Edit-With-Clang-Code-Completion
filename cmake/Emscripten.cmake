@@ -98,9 +98,11 @@ function(TextEditWithClangCodeCompletion_configure_wasm_target target)
       "-sASSERTIONS=1"
     )
 
-    # Link Emscripten's embind library explicitly. Modern Emscripten rejects
-    # the old -sEMBIND=1 flag as an internal setting.
-    target_link_libraries(${target} PRIVATE embind)
+    # Link Emscripten's embind library. It must come after all Qt/LLVM
+    # archives that reference embind symbols, so append it via the global
+    # exe linker flags rather than target_link_options (which are placed
+    # before libraries).
+    string(APPEND CMAKE_EXE_LINKER_FLAGS " -lembind")
 
     if(TextEditWithClangCodeCompletion_WASM_ENABLE_PTHREADS)
       list(APPEND _WASM_LINK_OPTIONS

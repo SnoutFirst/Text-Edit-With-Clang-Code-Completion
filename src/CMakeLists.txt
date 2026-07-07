@@ -1,3 +1,8 @@
+# Re-find Qt6 in this directory so AUTOGEN can detect the Qt version for the
+# texteditwithclangcodecompletion target (especially important for Emscripten
+# cross-builds where Qt tools are split between host and target installs).
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
+
 add_executable(texteditwithclangcodecompletion
   ${CMAKE_SOURCE_DIR}/main.cpp
   ${CMAKE_SOURCE_DIR}/texteditwithclangcodecompletion.cpp

@@ -4,12 +4,14 @@ function(TextEditWithClangCodeCompletion_setup_dependencies)
   # Prefer Qt6; fall back to Qt5 for local/legacy convenience.
   find_package(Qt6 QUIET COMPONENTS Core Gui Widgets)
   if(Qt6_FOUND)
-    set(TEXTEDIT_QT_TARGETS Qt6::Core Qt6::Gui Qt6::Widgets PARENT_SCOPE)
+    # Order high-level targets before low-level ones so static linking works
+    # correctly (dependent libraries precede their dependencies).
+    set(TEXTEDIT_QT_TARGETS Qt6::Widgets Qt6::Gui Qt6::Core PARENT_SCOPE)
     set(TEXTEDIT_QT_VERSION_MAJOR 6 PARENT_SCOPE)
     message(STATUS "Using Qt6")
   else()
     find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets)
-    set(TEXTEDIT_QT_TARGETS Qt5::Core Qt5::Gui Qt5::Widgets PARENT_SCOPE)
+    set(TEXTEDIT_QT_TARGETS Qt5::Widgets Qt5::Gui Qt5::Core PARENT_SCOPE)
     set(TEXTEDIT_QT_VERSION_MAJOR 5 PARENT_SCOPE)
     message(STATUS "Using Qt5")
   endif()
