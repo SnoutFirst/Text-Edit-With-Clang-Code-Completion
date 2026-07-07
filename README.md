@@ -32,6 +32,8 @@ The project is built on GitHub Actions for:
 Packages are produced with CPack and release artifacts are attached to tags.
 WASM builds are deployed to GitHub Pages.
 
+**Live demo:** https://snoutfirst.github.io/Text-Edit-With-Clang-Code-Completion/
+
 ## License
 
 BSD-2-Clause (see `COPYING`).

@@ -60,7 +60,7 @@ jobs:
         run: emcmake cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH:PATH="$QT_ROOT_DIR" -DQT_HOST_PATH:PATH="$QT_HOST_PATH" -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=BOTH -DTextEditWithClangCodeCompletion_ENABLE_IPO=OFF -DTextEditWithClangCodeCompletion_ENABLE_CLANG_TIDY=OFF -DTextEditWithClangCodeCompletion_ENABLE_CPPCHECK=OFF -DTextEditWithClangCodeCompletion_WARNINGS_AS_ERRORS=OFF -DTextEditWithClangCodeCompletion_ENABLE_SANITIZER_ADDRESS=OFF -DTextEditWithClangCodeCompletion_ENABLE_SANITIZER_UNDEFINED=OFF -DTextEditWithClangCodeCompletion_ENABLE_SANITIZER_LEAK=OFF -DTextEditWithClangCodeCompletion_ENABLE_SANITIZER_THREAD=OFF
 
       - name: Build all WASM targets
-        timeout-minutes: 30
+        timeout-minutes: 120
         run: emmake cmake --build build --target web-dist
 
       - name: Prepare deployment
