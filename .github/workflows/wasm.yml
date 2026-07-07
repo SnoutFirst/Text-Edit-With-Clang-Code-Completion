@@ -57,20 +57,34 @@ jobs:
       - name: Dump ABI diagnostics for libclang + Qt
         run: |
           set -euo pipefail
-          mkdir -p ${{ runner.temp }}/wasm-abi-diag
           OUT="${{ runner.temp }}/wasm-abi-diag"
-          echo "=== Emscripten version ===" > "$OUT/abi-diag.txt"
-          em++ --version >> "$OUT/abi-diag.txt" 2>&1
-          echo "" >> "$OUT/abi-diag.txt"
-          echo "=== libclang archive symbols referencing exception / longjmp runtime ===" >> "$OUT/abi-diag.txt"
-          find "${{ runner.temp }}/libclang-wasm/lib" -name '*.a' -print0 | xargs -0 -I{} sh -c 'echo "\n--- {} ---" >> '"$OUT/abi-diag.txt"'; nm -C {} 2>/dev/null | grep -E "__cxa_(begin|end|throw|rethrow|find_matching_catch)|__wasm_setjmp|emscripten_longjmp|llvm_eh_typeid_for|__resumeException" >> '"$OUT/abi-diag.txt"' || true'
-          echo "" >> "$OUT/abi-diag.txt"
-          echo "=== Qt archive symbols referencing exception / longjmp runtime ===" >> "$OUT/abi-diag.txt"
-          find "$QT_ROOT_DIR/lib" "$QT_ROOT_DIR/plugins" -name '*.a' -print0 2>/dev/null | xargs -0 -I{} sh -c 'echo "\n--- {} ---" >> '"$OUT/abi-diag.txt"'; nm -C {} 2>/dev/null | grep -E "__cxa_(begin|end|throw|rethrow|find_matching_catch)|__wasm_setjmp|emscripten_longjmp|llvm_eh_typeid_for|__resumeException" >> '"$OUT/abi-diag.txt"' || true'
-          echo "" >> "$OUT/abi-diag.txt"
-          echo "=== libclang CMake targets exported symbols ===" >> "$OUT/abi-diag.txt"
-          find "${{ runner.temp }}/libclang-wasm" -name 'libclang*.a' -print0 | xargs -0 -I{} sh -c 'echo "\n--- {} ---" >> '"$OUT/abi-diag.txt"'; nm -C {} 2>/dev/null | head -50 >> '"$OUT/abi-diag.txt"'
-          ls -la "$OUT" >> "$OUT/abi-diag.txt"
+          mkdir -p "$OUT"
+          {
+            echo "=== Emscripten version ==="
+            em++ --version 2>&1 || true
+            echo ""
+            echo "=== libclang archive symbols referencing exception / longjmp runtime ==="
+            for f in $(find "${{ runner.temp }}/libclang-wasm/lib" -name '*.a'); do
+              echo ""
+              echo "--- $f ---"
+              nm -C "$f" 2>/dev/null | grep -E "__cxa_(begin|end|throw|rethrow|find_matching_catch)|__wasm_setjmp|emscripten_longjmp|llvm_eh_typeid_for|__resumeException" || true
+            done
+            echo ""
+            echo "=== Qt archive symbols referencing exception / longjmp runtime ==="
+            for f in $(find "$QT_ROOT_DIR/lib" "$QT_ROOT_DIR/plugins" -name '*.a' 2>/dev/null); do
+              echo ""
+              echo "--- $f ---"
+              nm -C "$f" 2>/dev/null | grep -E "__cxa_(begin|end|throw|rethrow|find_matching_catch)|__wasm_setjmp|emscripten_longjmp|llvm_eh_typeid_for|__resumeException" || true
+            done
+            echo ""
+            echo "=== libclang CMake targets exported symbols ==="
+            for f in $(find "${{ runner.temp }}/libclang-wasm" -name 'libclang*.a'); do
+              echo ""
+              echo "--- $f ---"
+              nm -C "$f" 2>/dev/null | head -50 || true
+            done
+          } > "$OUT/abi-diag.txt"
+          ls -la "$OUT"
       - uses: actions/upload-artifact@v4
         with:
           name: wasm-abi-diagnostics
