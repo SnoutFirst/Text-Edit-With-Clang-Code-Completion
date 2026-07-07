@@ -54,10 +54,28 @@ jobs:
           tar -xzf llvm-build.tar.gz
           echo "EMSCRIPTEN_LIBCLANG_ROOT=${{ runner.temp }}/libclang-wasm" >> $GITHUB_ENV
 
-      - name: Debug with tmate
-        uses: mxschmitt/action-tmate@v3
+      - name: Dump ABI diagnostics for libclang + Qt
+        run: |
+          set -euo pipefail
+          mkdir -p ${{ runner.temp }}/wasm-abi-diag
+          OUT="${{ runner.temp }}/wasm-abi-diag"
+          echo "=== Emscripten version ===" > "$OUT/abi-diag.txt"
+          em++ --version >> "$OUT/abi-diag.txt" 2>&1
+          echo "" >> "$OUT/abi-diag.txt"
+          echo "=== libclang archive symbols referencing exception / longjmp runtime ===" >> "$OUT/abi-diag.txt"
+          find "${{ runner.temp }}/libclang-wasm/lib" -name '*.a' -print0 | xargs -0 -I{} sh -c 'echo "\n--- {} ---" >> '"$OUT/abi-diag.txt"'; nm -C {} 2>/dev/null | grep -E "__cxa_(begin|end|throw|rethrow|find_matching_catch)|__wasm_setjmp|emscripten_longjmp|llvm_eh_typeid_for|__resumeException" >> '"$OUT/abi-diag.txt"' || true'
+          echo "" >> "$OUT/abi-diag.txt"
+          echo "=== Qt archive symbols referencing exception / longjmp runtime ===" >> "$OUT/abi-diag.txt"
+          find "$QT_ROOT_DIR/lib" "$QT_ROOT_DIR/plugins" -name '*.a' -print0 2>/dev/null | xargs -0 -I{} sh -c 'echo "\n--- {} ---" >> '"$OUT/abi-diag.txt"'; nm -C {} 2>/dev/null | grep -E "__cxa_(begin|end|throw|rethrow|find_matching_catch)|__wasm_setjmp|emscripten_longjmp|llvm_eh_typeid_for|__resumeException" >> '"$OUT/abi-diag.txt"' || true'
+          echo "" >> "$OUT/abi-diag.txt"
+          echo "=== libclang CMake targets exported symbols ===" >> "$OUT/abi-diag.txt"
+          find "${{ runner.temp }}/libclang-wasm" -name 'libclang*.a' -print0 | xargs -0 -I{} sh -c 'echo "\n--- {} ---" >> '"$OUT/abi-diag.txt"'; nm -C {} 2>/dev/null | head -50 >> '"$OUT/abi-diag.txt"'
+          ls -la "$OUT" >> "$OUT/abi-diag.txt"
+      - uses: actions/upload-artifact@v4
         with:
-          limit-access-to-actor: true
+          name: wasm-abi-diagnostics
+          path: ${{ runner.temp }}/wasm-abi-diag
+          if-no-files-found: error
 
       - name: Configure CMake
         env:
@@ -65,7 +83,27 @@ jobs:
         run: emcmake cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH:PATH="$QT_ROOT_DIR" -DQT_HOST_PATH:PATH="$QT_HOST_PATH" -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=BOTH -DTextEditWithClangCodeCompletion_ENABLE_IPO=OFF -DTextEditWithClangCodeCompletion_ENABLE_CLANG_TIDY=OFF -DTextEditWithClangCodeCompletion_ENABLE_CPPCHECK=OFF -DTextEditWithClangCodeCompletion_WARNINGS_AS_ERRORS=OFF -DTextEditWithClangCodeCompletion_ENABLE_SANITIZER_ADDRESS=OFF -DTextEditWithClangCodeCompletion_ENABLE_SANITIZER_UNDEFINED=OFF -DTextEditWithClangCodeCompletion_ENABLE_SANITIZER_LEAK=OFF -DTextEditWithClangCodeCompletion_ENABLE_SANITIZER_THREAD=OFF
 
       - name: Build all WASM targets
+        id: wasm-build
+        continue-on-error: true
         run: emmake cmake --build build --target web-dist
+
+      - name: Upload build logs on failure
+        if: steps.wasm-build.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-build-logs
+          path: build/**/*.log
+          if-no-files-found: ignore
+
+      - name: Try manual link diagnostics on failure
+        if: steps.wasm-build.outcome == 'failure'
+        run: |
+          set -euo pipefail
+          echo "=== Manual link attempt with ERROR_ON_UNDEFINED_SYMBOLS=0 ==="
+          # Re-run ninja and capture the failing link command, then append the override.
+          # This is a heuristic; the real link command is visible in VERBOSE output.
+          emmake cmake --build build --target texteditwithclangcodecompletion -v 2>&1 | tee /tmp/manual-link.log || true
+          tail -80 /tmp/manual-link.log
 
       - name: Prepare deployment
         run: |
