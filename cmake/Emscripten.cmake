@@ -47,6 +47,11 @@ if(EMSCRIPTEN)
   set(TextEditWithClangCodeCompletion_WASM_ASYNCIFY_STACK_SIZE "65536" CACHE STRING
       "Asyncify stack size in bytes (default: 64KB)")
 
+  # Disable hardening for Emscripten; stack protector and similar flags
+  # require runtime support that isn't available in the WASM sysroot.
+  set(TextEditWithClangCodeCompletion_ENABLE_HARDENING OFF CACHE BOOL "Hardening not supported with Emscripten" FORCE)
+  add_compile_options(-fno-stack-protector)
+
   # The template originally forced pthreads for FTXUI. This project uses Qt6 WASM
   # singlethread by default, so we only enable pthreads when requested.
   if(TextEditWithClangCodeCompletion_WASM_ENABLE_PTHREADS)
