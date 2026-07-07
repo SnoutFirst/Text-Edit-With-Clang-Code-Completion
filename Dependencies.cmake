@@ -67,14 +67,23 @@ function(TextEditWithClangCodeCompletion_setup_dependencies)
             COMMAND ${CMAKE_AR} rcs "${_EM_FILTERED_SUPPORT_LIB}" ${_EM_SUPPORT_MEMBERS_LIST}
             WORKING_DIRECTORY "${_EM_FILTERED_SUPPORT_DIR}"
             ERROR_QUIET)
-          set(_EM_LLVM_SUPPORT_LIB "${_EM_FILTERED_SUPPORT_LIB}")
+
+          # Redirect every LLVM target that depends on the LLVMSupport imported
+          # target to the filtered archive, so the original archive is never
+          # pulled back in as a transitive dependency of libclang/LLVM.
+          if(TARGET LLVMSupport)
+            set_target_properties(LLVMSupport PROPERTIES
+              IMPORTED_LOCATION "${_EM_FILTERED_SUPPORT_LIB}"
+              IMPORTED_LOCATION_NOCONFIG "${_EM_FILTERED_SUPPORT_LIB}"
+              IMPORTED_LOCATION_RELEASE "${_EM_FILTERED_SUPPORT_LIB}"
+              IMPORTED_LOCATION_DEBUG "${_EM_FILTERED_SUPPORT_LIB}"
+              IMPORTED_LOCATION_RELWITHDEBINFO "${_EM_FILTERED_SUPPORT_LIB}"
+              IMPORTED_LOCATION_MINSIZEREL "${_EM_FILTERED_SUPPORT_LIB}")
+          endif()
         endif()
       endif()
 
-      set(TEXTEDIT_CLANG_LINK_LIBRARIES
-        libclang
-        ${_EM_LLVM_SUPPORT_LIB}
-        PARENT_SCOPE)
+      set(TEXTEDIT_CLANG_LINK_LIBRARIES libclang PARENT_SCOPE)
       return()
     endif()
 
