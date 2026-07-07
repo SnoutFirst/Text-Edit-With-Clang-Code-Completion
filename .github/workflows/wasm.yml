@@ -63,25 +63,37 @@ jobs:
             echo "=== Emscripten version ==="
             em++ --version 2>&1 || true
             echo ""
-            echo "=== libclang archive symbols referencing exception / longjmp runtime ==="
+            echo "=== llvm-nm availability ==="
+            which llvm-nm || true
+            which emnm || true
+            ls -la "${EMSDK}/upstream/bin/llvm-nm" || true
+            echo ""
+            echo "=== libclang archive undefined (U) symbols referencing exception / longjmp runtime ==="
             for f in $(find "${{ runner.temp }}/libclang-wasm/lib" -name '*.a'); do
               echo ""
               echo "--- $f ---"
-              nm -C "$f" 2>/dev/null | grep -E "__cxa_(begin|end|throw|rethrow|find_matching_catch)|__wasm_setjmp|emscripten_longjmp|llvm_eh_typeid_for|__resumeException" || true
+              "${EMSDK}/upstream/bin/llvm-nm" "$f" 2>/dev/null | grep -E '^[[:space:]]*U[[:space:]]+(__cxa_(begin|end|throw|rethrow|find_matching_catch)|__wasm_setjmp|emscripten_longjmp|llvm_eh_typeid_for|__resumeException)' || true
             done
             echo ""
-            echo "=== Qt archive symbols referencing exception / longjmp runtime ==="
+            echo "=== Qt archive undefined (U) symbols referencing exception / longjmp runtime ==="
             for f in $(find "$QT_ROOT_DIR/lib" "$QT_ROOT_DIR/plugins" -name '*.a' 2>/dev/null); do
               echo ""
               echo "--- $f ---"
-              nm -C "$f" 2>/dev/null | grep -E "__cxa_(begin|end|throw|rethrow|find_matching_catch)|__wasm_setjmp|emscripten_longjmp|llvm_eh_typeid_for|__resumeException" || true
+              "${EMSDK}/upstream/bin/llvm-nm" "$f" 2>/dev/null | grep -E '^[[:space:]]*U[[:space:]]+(__cxa_(begin|end|throw|rethrow|find_matching_catch)|__wasm_setjmp|emscripten_longjmp|llvm_eh_typeid_for|__resumeException)' || true
             done
             echo ""
-            echo "=== libclang CMake targets exported symbols ==="
-            for f in $(find "${{ runner.temp }}/libclang-wasm" -name 'libclang*.a'); do
+            echo "=== libclang.a first 50 symbols ==="
+            for f in $(find "${{ runner.temp }}/libclang-wasm" -name 'libclang.a'); do
               echo ""
               echo "--- $f ---"
-              nm -C "$f" 2>/dev/null | head -50 || true
+              "${EMSDK}/upstream/bin/llvm-nm" "$f" 2>/dev/null | head -50 || true
+            done
+            echo ""
+            echo "=== libclang.a all undefined symbols ==="
+            for f in $(find "${{ runner.temp }}/libclang-wasm" -name 'libclang.a'); do
+              echo ""
+              echo "--- $f ---"
+              "${EMSDK}/upstream/bin/llvm-nm" "$f" 2>/dev/null | grep '^[[:space:]]*U' || true
             done
           } > "$OUT/abi-diag.txt"
           ls -la "$OUT"
