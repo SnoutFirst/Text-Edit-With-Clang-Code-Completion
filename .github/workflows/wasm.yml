@@ -31,7 +31,7 @@ jobs:
       - name: Install Qt6 for WASM
         uses: jurplel/install-qt-action@v4
         with:
-          version: '6.8.2'
+          version: '6.7.3'
           host: 'all_os'
           target: 'wasm'
           arch: 'wasm_singlethread'
