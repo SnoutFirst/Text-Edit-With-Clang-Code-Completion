@@ -58,6 +58,9 @@ jobs:
             enable_ipo: Off
             qt_arch: clang_64
 
+          - os: windows-latest
+            qt_arch: win64_msvc2019_64
+
           - build_type: Release
             packaging_maintainer_mode: On
             package_generator: TBZ2
