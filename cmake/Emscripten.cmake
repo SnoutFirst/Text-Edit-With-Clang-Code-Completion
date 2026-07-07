@@ -89,6 +89,7 @@ function(TextEditWithClangCodeCompletion_configure_wasm_target target)
     target_compile_definitions(${target} PRIVATE TextEditWithClangCodeCompletion_WASM_BUILD=1)
 
     set(_WASM_LINK_OPTIONS
+      "-lembind"
       "-sASYNCIFY=1"
       "-sASYNCIFY_STACK_SIZE=${TextEditWithClangCodeCompletion_WASM_ASYNCIFY_STACK_SIZE}"
       "-sALLOW_MEMORY_GROWTH=1"

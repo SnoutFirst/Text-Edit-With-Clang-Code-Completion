@@ -28,6 +28,15 @@ jobs:
       - name: Install Ninja
         run: sudo apt-get install -y ninja-build
 
+      # Qt6 WASM needs host tools (moc/rcc/uic) from a desktop Qt install.
+      - name: Install Qt6 host tools (desktop)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.3'
+          arch: 'linux_gcc_64'
+          install-deps: true
+          dir: ${{ runner.temp }}/qt-host
+
       - name: Install Qt6 for WASM
         uses: jurplel/install-qt-action@v4
         with:
@@ -46,6 +55,8 @@ jobs:
           echo "EMSCRIPTEN_LIBCLANG_ROOT=${{ runner.temp }}/libclang-wasm" >> $GITHUB_ENV
 
       - name: Configure CMake
+        env:
+          QT_HOST_PATH: ${{ runner.temp }}/qt-host/Qt/6.7.3/gcc_64
         run: emcmake cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH:PATH="$QT_ROOT_DIR" -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=BOTH -DTextEditWithClangCodeCompletion_ENABLE_IPO=OFF -DTextEditWithClangCodeCompletion_ENABLE_CLANG_TIDY=OFF -DTextEditWithClangCodeCompletion_ENABLE_CPPCHECK=OFF -DTextEditWithClangCodeCompletion_WARNINGS_AS_ERRORS=OFF -DTextEditWithClangCodeCompletion_ENABLE_SANITIZER_ADDRESS=OFF -DTextEditWithClangCodeCompletion_ENABLE_SANITIZER_UNDEFINED=OFF -DTextEditWithClangCodeCompletion_ENABLE_SANITIZER_LEAK=OFF -DTextEditWithClangCodeCompletion_ENABLE_SANITIZER_THREAD=OFF
 
       - name: Build all WASM targets
