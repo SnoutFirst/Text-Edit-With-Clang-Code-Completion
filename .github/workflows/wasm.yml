@@ -23,7 +23,7 @@ jobs:
       - name: Setup Emscripten
         uses: mymindstorm/setup-emsdk@v16
         with:
-          version: 'latest'
+          version: '3.1.50'
 
       - name: Install Ninja
         run: sudo apt-get install -y ninja-build
