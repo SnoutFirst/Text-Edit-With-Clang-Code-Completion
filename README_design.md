@@ -14,7 +14,7 @@ below explains *why*, so you can keep it, swap it, or turn it off.
 | File | Role |
 | --- | --- |
 | `CMakeLists.txt` | Top-level wiring. |
-| `ProjectOptions.cmake` | All `myproject_*` options and setup macros. |
+| `ProjectOptions.cmake` | All `TextEditWithClangCodeCompletion_*` options and setup macros. |
 | `Dependencies.cmake` | CPM package fetch, gated by `if(NOT TARGET ...)`. |
 | `cmake/*.cmake` | One concern per file (warnings, sanitizers, hardening, ...). |
 
@@ -62,22 +62,21 @@ IPO/LTO is on by default at top level. It is gated through
 
 ## Dependencies
 
-[CPM](https://github.com/cpm-cmake/CPM.cmake) fetches sources at configure
-time. Each package is gated by `if(NOT TARGET ...)`, so a parent project can
-supply its own version. `SYSTEM YES` silences warnings from third-party
-headers. Default set: fmt, spdlog, Catch2, CLI11, FTXUI, lefticus/tools.
+This project depends on:
+
+- Qt6 (Qt5 is used as a fallback)
+- libclang / LLVM
+
+These are found via `find_package(Qt6)` / `find_package(Qt5)` and `llvm-config` / `find_package(LLVM CONFIG)` / `pkg_check_modules(libclang)` in `Dependencies.cmake`. On WASM, a prebuilt Emscripten `libclang` from `TheComputerM/libclang-wasm` is used.
 
 ## Testing
 
-* `test/tests.cpp` — Catch2 unit tests.
-* `test/constexpr_tests.cpp` — the same checks at compile time, so bugs
-  become build errors.
-* `fuzz_test/` — libFuzzer harness, auto-enabled when ASan/TSan/UBSan and
-  libFuzzer are all available.
+There are no tests yet. The `test/` and `fuzz_test/` directories from the
+template were removed for this project.
 
 ## Targets and packaging
 
-`myproject_options` and `myproject_warnings` are `INTERFACE` libraries that
+`TextEditWithClangCodeCompletion_options` and `TextEditWithClangCodeCompletion_warnings` are `INTERFACE` libraries that
 hold flags. Real targets link them to inherit the configuration without
 touching global state. `CPack` package names embed compiler, version, and
 short Git SHA, so a binary maps to one build.
@@ -89,10 +88,10 @@ The default build type is `RelWithDebInfo` — debuggable and fast.
 
 ## Changing the defaults
 
-Every knob is a CMake option named `myproject_ENABLE_<feature>`. Flip it on
+Every knob is a CMake option named `TextEditWithClangCodeCompletion_ENABLE_<feature>`. Flip it on
 the configure line, for example:
 
-    cmake -B build -S . -Dmyproject_ENABLE_CLANG_TIDY=OFF
+    cmake -B build -S . -DTextEditWithClangCodeCompletion_ENABLE_CLANG_TIDY=OFF
 
-The `myproject_` prefix is the placeholder the rename workflow replaces, so
-renaming the project is one search-and-replace.
+The `TextEditWithClangCodeCompletion_` prefix has already been applied to
+all macros, targets, and cache options.
