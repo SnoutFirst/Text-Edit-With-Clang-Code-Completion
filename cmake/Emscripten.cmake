@@ -98,11 +98,11 @@ function(TextEditWithClangCodeCompletion_configure_wasm_target target)
       "-sASSERTIONS=1"
     )
 
-    # Link Emscripten's embind library. It must come after all Qt/LLVM
-    # archives that reference embind symbols, so append it via the global
-    # exe linker flags rather than target_link_options (which are placed
-    # before libraries).
-    string(APPEND CMAKE_EXE_LINKER_FLAGS " -lembind")
+    # Link Emscripten's embind library via the legacy --bind driver flag. Modern
+    # Emscripten rejects -sEMBIND=1 as internal, and raw -lembind ordering is
+    # fragile with the many static Qt/LLVM archives in this build. --bind lets
+    # em++ place embind correctly in the final link command.
+    string(APPEND CMAKE_EXE_LINKER_FLAGS " --bind")
 
     if(TextEditWithClangCodeCompletion_WASM_ENABLE_PTHREADS)
       list(APPEND _WASM_LINK_OPTIONS
