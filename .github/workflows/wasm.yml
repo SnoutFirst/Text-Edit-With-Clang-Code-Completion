@@ -54,6 +54,11 @@ jobs:
           tar -xzf llvm-build.tar.gz
           echo "EMSCRIPTEN_LIBCLANG_ROOT=${{ runner.temp }}/libclang-wasm" >> $GITHUB_ENV
 
+      - name: Debug with tmate
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
+
       - name: Configure CMake
         env:
           QT_HOST_PATH: ${{ runner.temp }}/qt-host/Qt/6.7.3/gcc_64
