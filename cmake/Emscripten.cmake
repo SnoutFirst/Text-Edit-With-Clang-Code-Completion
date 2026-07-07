@@ -61,6 +61,15 @@ if(EMSCRIPTEN)
   # Qt 6.7.3 official binaries do not support native Wasm exceptions. Do not
   # inject -fwasm-exceptions, it removes the JS exception runtime symbols that
   # Qt's static archives need (__cxa_begin_catch, __cxa_throw, ...).
+  #
+  # Emscripten disables exception catching by default; explicitly re-enable it so
+  # the JS exception runtime is linked in.
+  add_link_options(-sNO_DISABLE_EXCEPTION_CATCHING)
+
+  # The prebuilt libclang-wasm archive references the wasm longjmp runtime
+  # (__wasm_setjmp / emscripten_longjmp), so keep that model at link time even
+  # though we are using JS exceptions. If this still fails, libclang will need to
+  # be rebuilt to match Qt's default emscripten longjmp model.
 
   # The template originally forced pthreads for FTXUI. This project uses Qt6 WASM
   # singlethread by default, so we only enable pthreads when requested.
