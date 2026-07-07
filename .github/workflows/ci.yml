@@ -47,12 +47,12 @@ jobs:
           - compiler: gcc-14
             gcov_executable: gcov-14
             enable_ipo: On
-            qt_arch: gcc_64
+            qt_arch: linux_gcc_64
 
           - compiler: llvm-19.1.1
             enable_ipo: Off
             gcov_executable: "llvm-cov gcov"
-            qt_arch: gcc_64
+            qt_arch: linux_gcc_64
 
           - os: macos-latest
             enable_ipo: Off
@@ -69,7 +69,7 @@ jobs:
             gcov_executable: gcov-14
             packaging_maintainer_mode: On
             enable_ipo: Off
-            qt_arch: gcc_64
+            qt_arch: linux_gcc_64
 
           - os: windows-latest
             compiler: msvc
@@ -77,7 +77,7 @@ jobs:
             build_type: Debug
             packaging_maintainer_mode: On
             enable_ipo: On
-            qt_arch: win64_msvc2022_64
+            qt_arch: win64_msvc2019_64
 
           - os: windows-latest
             compiler: msvc
@@ -85,14 +85,14 @@ jobs:
             build_type: Release
             packaging_maintainer_mode: On
             enable_ipo: On
-            qt_arch: win64_msvc2022_64
+            qt_arch: win64_msvc2019_64
 
           - os: windows-latest
             compiler: msvc
             generator: "Visual Studio 17 2022"
             build_type: Debug
             packaging_maintainer_mode: Off
-            qt_arch: win64_msvc2022_64
+            qt_arch: win64_msvc2019_64
 
           - os: windows-latest
             compiler: msvc
@@ -100,7 +100,7 @@ jobs:
             build_type: Release
             packaging_maintainer_mode: Off
             enable_ipo: On
-            qt_arch: win64_msvc2022_64
+            qt_arch: win64_msvc2019_64
             package_generator: ZIP
 
           - os: windows-latest
@@ -110,7 +110,7 @@ jobs:
             packaging_maintainer_mode: On
             enable_ipo: On
             build_shared: On
-            qt_arch: win64_msvc2022_64
+            qt_arch: win64_msvc2019_64
 
     steps:
       - name: Check for llvm version mismatches
