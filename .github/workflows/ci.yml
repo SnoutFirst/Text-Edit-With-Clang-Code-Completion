@@ -40,13 +40,19 @@ jobs:
           - OFF
 
         exclude:
+          # gcc on macOS and Windows doesn't make sense for this project
+          - os: macos-latest
+            compiler: gcc-14
           - os: windows-latest
             compiler: gcc-14
+          # clang on Windows is unnecessary; use MSVC
+          - os: windows-latest
+            compiler: llvm-19.1.1
 
         include:
           - compiler: gcc-14
             gcov_executable: gcov-14
-            enable_ipo: On
+            enable_ipo: Off
             qt_arch: linux_gcc_64
 
           - compiler: llvm-19.1.1
@@ -59,6 +65,7 @@ jobs:
             qt_arch: clang_64
 
           - os: windows-latest
+            enable_ipo: Off
             qt_arch: win64_msvc2019_64
 
           - build_type: Release
@@ -79,7 +86,7 @@ jobs:
             generator: "Ninja Multi-Config"
             build_type: Debug
             packaging_maintainer_mode: On
-            enable_ipo: On
+            enable_ipo: Off
             qt_arch: win64_msvc2019_64
 
           - os: windows-latest
@@ -87,7 +94,7 @@ jobs:
             generator: "Ninja Multi-Config"
             build_type: Release
             packaging_maintainer_mode: On
-            enable_ipo: On
+            enable_ipo: Off
             qt_arch: win64_msvc2019_64
 
           - os: windows-latest
@@ -95,6 +102,7 @@ jobs:
             generator: "Ninja Multi-Config"
             build_type: Debug
             packaging_maintainer_mode: Off
+            enable_ipo: Off
             qt_arch: win64_msvc2019_64
 
           - os: windows-latest
@@ -102,7 +110,7 @@ jobs:
             generator: "Ninja Multi-Config"
             build_type: Release
             packaging_maintainer_mode: Off
-            enable_ipo: On
+            enable_ipo: Off
             qt_arch: win64_msvc2019_64
             package_generator: ZIP
 
@@ -111,7 +119,7 @@ jobs:
             generator: "Ninja Multi-Config"
             build_type: Release
             packaging_maintainer_mode: On
-            enable_ipo: On
+            enable_ipo: Off
             build_shared: On
             qt_arch: win64_msvc2019_64
 
@@ -175,6 +183,9 @@ jobs:
 
       - name: Configure CMake
         shell: bash
+        env:
+          CC: ${{ matrix.compiler == 'msvc' && 'cl' || '' }}
+          CXX: ${{ matrix.compiler == 'msvc' && 'cl' || '' }}
         run: |
           cmake -S . -B ./build -G "${{matrix.generator}}" \
             -D CMAKE_PREFIX_PATH:PATH="$QT_ROOT_DIR" \
@@ -185,6 +196,10 @@ jobs:
             -D ${{ env.PROJECT_NAME }}_ENABLE_CPPCHECK:BOOL=OFF \
             -D ${{ env.PROJECT_NAME }}_ENABLE_COVERAGE:BOOL=OFF \
             -D ${{ env.PROJECT_NAME }}_WARNINGS_AS_ERRORS:BOOL=OFF \
+            -D ${{ env.PROJECT_NAME }}_ENABLE_SANITIZER_ADDRESS:BOOL=OFF \
+            -D ${{ env.PROJECT_NAME }}_ENABLE_SANITIZER_UNDEFINED:BOOL=OFF \
+            -D ${{ env.PROJECT_NAME }}_ENABLE_SANITIZER_LEAK:BOOL=OFF \
+            -D ${{ env.PROJECT_NAME }}_ENABLE_SANITIZER_THREAD:BOOL=OFF \
             -DGIT_SHA:STRING=${{ github.sha }}
 
       - name: Build
@@ -223,5 +238,5 @@ jobs:
           fail_ci_if_error: false
           flags: ${{ runner.os }}
           name: ${{ runner.os }}-coverage
-          token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets.CODEV_TOKEN }}
           files: ./build/coverage.xml

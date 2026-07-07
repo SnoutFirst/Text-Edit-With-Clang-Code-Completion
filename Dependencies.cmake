@@ -53,7 +53,7 @@ function(TextEditWithClangCodeCompletion_setup_dependencies)
     set(TEXTEDIT_CLANG_LINK_LIBRARIES ${LIBCLANG_LINK_LIBRARIES} PARENT_SCOPE)
     set(TEXTEDIT_CLANG_COMPILE_OPTIONS ${LIBCLANG_CFLAGS_OTHER} PARENT_SCOPE)
   else()
-    # Respect an explicit LLVM_PATH from the environment (e.g. KyleMayes/install-llvm-action)
+    # Respect an explicit LLVM_PATH from the environment (e.g. KyleMayes/install-llvm-action on Windows)
     if(DEFINED ENV{LLVM_PATH})
       set(_LLVM_HINTS $ENV{LLVM_PATH}/bin)
       message(STATUS "LLVM_PATH set to $ENV{LLVM_PATH}")
@@ -76,33 +76,30 @@ function(TextEditWithClangCodeCompletion_setup_dependencies)
         OUTPUT_VARIABLE LLVM_LDFLAGS
         OUTPUT_STRIP_TRAILING_WHITESPACE)
       execute_process(
-        COMMAND ${LLVM_CONFIG_EXECUTABLE} --libs
-        OUTPUT_VARIABLE LLVM_LIBS
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
-      execute_process(
-        COMMAND ${LLVM_CONFIG_EXECUTABLE} --system-libs
-        OUTPUT_VARIABLE LLVM_SYSTEM_LIBS
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
-      execute_process(
         COMMAND ${LLVM_CONFIG_EXECUTABLE} --cxxflags
         OUTPUT_VARIABLE LLVM_CXXFLAGS
         OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-      string(REPLACE " " ";" LLVM_LIBS_LIST "${LLVM_LIBS}")
-      set(CLANG_ONLY_LIBS "")
-      foreach(lib ${LLVM_LIBS_LIST})
-        if(lib MATCHES "clang")
-          list(APPEND CLANG_ONLY_LIBS ${lib})
-        endif()
-      endforeach()
-      if(NOT CLANG_ONLY_LIBS)
-        set(CLANG_ONLY_LIBS "clang")
+      # Convert space-separated flags into CMake lists so target_link_options
+      # / target_compile_options treat each flag separately.
+      string(REPLACE " " ";" LLVM_LDFLAGS_LIST "${LLVM_LDFLAGS}")
+      string(REPLACE " " ";" LLVM_CXXFLAGS_LIST "${LLVM_CXXFLAGS}")
+
+      # Remove -std=c++NN from llvm-config flags; we set our own C++ standard.
+      list(FILTER LLVM_CXXFLAGS_LIST EXCLUDE REGEX "^-std=c\\+\\+.*$")
+
+      # Find the actual libclang library (name varies by platform).
+      find_library(CLANG_LIBRARY
+        NAMES clang libclang clang.lib libclang.lib
+        PATHS ${LLVM_LIBRARY_DIR}
+        NO_DEFAULT_PATH)
+      if(NOT CLANG_LIBRARY)
+        message(FATAL_ERROR "Could not find libclang in ${LLVM_LIBRARY_DIR}")
       endif()
 
       set(TEXTEDIT_CLANG_INCLUDE_DIRS ${LLVM_INCLUDE_DIR} PARENT_SCOPE)
-      set(TEXTEDIT_CLANG_LINK_LIBRARIES ${CLANG_ONLY_LIBS} ${LLVM_SYSTEM_LIBS} PARENT_SCOPE)
-      set(TEXTEDIT_CLANG_LINK_OPTIONS ${LLVM_LDFLAGS} PARENT_SCOPE)
-      set(TEXTEDIT_CLANG_COMPILE_OPTIONS ${LLVM_CXXFLAGS} PARENT_SCOPE)
+      set(TEXTEDIT_CLANG_LINK_LIBRARIES ${CLANG_LIBRARY} ${LLVM_LDFLAGS_LIST} PARENT_SCOPE)
+      set(TEXTEDIT_CLANG_COMPILE_OPTIONS ${LLVM_CXXFLAGS_LIST} PARENT_SCOPE)
     else()
       if(DEFINED ENV{LLVM_PATH})
         find_package(LLVM QUIET CONFIG PATHS $ENV{LLVM_PATH}/lib/cmake/llvm NO_DEFAULT_PATH)
@@ -113,17 +110,20 @@ function(TextEditWithClangCodeCompletion_setup_dependencies)
       if(LLVM_FOUND)
         message(STATUS "Found LLVM CMake config: ${LLVM_DIR}")
         find_library(CLANG_LIBRARY
-          NAMES clang libclang
+          NAMES clang libclang clang.lib libclang.lib
           PATHS ${LLVM_LIBRARY_DIR} ${LLVM_LIBRARY_DIRS}
           NO_DEFAULT_PATH)
         find_path(CLANG_INCLUDE_DIR
           NAMES clang-c/Index.h
           PATHS ${LLVM_INCLUDE_DIRS}
           NO_DEFAULT_PATH)
+        if(NOT CLANG_LIBRARY)
+          message(FATAL_ERROR "Could not find libclang via LLVM CMake config")
+        endif()
         set(TEXTEDIT_CLANG_INCLUDE_DIRS ${CLANG_INCLUDE_DIR} PARENT_SCOPE)
         set(TEXTEDIT_CLANG_LINK_LIBRARIES ${CLANG_LIBRARY} PARENT_SCOPE)
       else()
-        find_library(CLANG_LIBRARY NAMES clang libclang)
+        find_library(CLANG_LIBRARY NAMES clang libclang clang.lib libclang.lib)
         find_path(CLANG_INCLUDE_DIR NAMES clang-c/Index.h)
         if(NOT CLANG_LIBRARY OR NOT CLANG_INCLUDE_DIR)
           message(FATAL_ERROR "Could not find libclang. Please install libclang-dev / llvm-dev or set CLANG_LIBRARY/CLANG_INCLUDE_DIR manually.")
