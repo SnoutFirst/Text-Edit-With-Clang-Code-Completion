@@ -3,10 +3,17 @@
 # cross-builds where Qt tools are split between host and target installs).
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 
-add_executable(texteditwithclangcodecompletion
+set(_TEXTEDIT_SOURCES
   ${CMAKE_SOURCE_DIR}/main.cpp
   ${CMAKE_SOURCE_DIR}/texteditwithclangcodecompletion.cpp
   ${CMAKE_SOURCE_DIR}/texteditwithclangcodecompletion.h)
+
+if(EMSCRIPTEN)
+  # ABI-incompatible LLVM Support stubs for the WASM build (see the file).
+  list(APPEND _TEXTEDIT_SOURCES ${CMAKE_SOURCE_DIR}/src/emscripten_stubs.cpp)
+endif()
+
+add_executable(texteditwithclangcodecompletion ${_TEXTEDIT_SOURCES})
 
 set_target_properties(texteditwithclangcodecompletion PROPERTIES AUTOMOC ON)
 
